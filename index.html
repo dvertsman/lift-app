@@ -318,6 +318,14 @@ table.tbl td.r,table.tbl th.r{text-align:right}
 .swatch .dots i{width:22px;height:22px;border-radius:50%;border:1px solid rgb(255 255 255 / .12)}
 .swatch small{font-weight:500;color:var(--red-dim)}
 
+
+.lastcard{width:100%;text-align:left;color:inherit;font:inherit;cursor:pointer}
+.lastcard:hover{border-color:var(--red)}
+.lastex{display:flex;flex-direction:column;border-top:1px solid var(--line)}
+.lastex div{display:flex;justify-content:space-between;gap:12px;padding:7px 0;border-bottom:1px solid var(--line);font-size:14px}
+.lastex div span:first-child{color:var(--red-text);font-weight:600}
+.lastex .val{text-align:right;font-variant-numeric:tabular-nums}
+
 /* ---------- exercise picker ---------- */
 .overlay{position:fixed;inset:0;z-index:60;background:rgb(0 0 0 / .75);display:flex;align-items:flex-end;justify-content:center}
 @media (min-width:760px){.overlay{align-items:center}}
@@ -365,8 +373,8 @@ table.tbl td.r,table.tbl th.r{text-align:right}
 <div id="tip" class="tip" hidden></div>
 <div id="toast" class="toast" hidden></div>
 
-<script src="config.js"></script>
+<script src="config.js?v=4"></script>
 <script src="vendor/supabase.js"></script>
-<script src="app.js"></script>
+<script src="app.js?v=4"></script>
 </body>
 </html>

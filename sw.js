@@ -1,7 +1,7 @@
 // Lift Log service worker: lets the app open instantly and work offline.
 // App files: network first (so updates show up right away), falling back to the saved copy when offline or slow.
 // Fonts: saved after first use. Supabase requests always go straight to the network.
-const VERSION = 'liftlog-v2';
+const VERSION = 'liftlog-v3';
 const SHELL = ['./', './index.html', './app.js', './config.js', './vendor/supabase.js', './manifest.webmanifest',
   './icons/icon-192.png', './icons/icon-512.png', './icons/apple-touch-icon.png'];
 
@@ -20,7 +20,8 @@ self.addEventListener('fetch', e => {
     e.respondWith((async () => {
       const cache = await caches.open(VERSION);
       try {
-        const res = await Promise.race([fetch(req), timeout(3000)]);
+        // no-cache: always ask GitHub whether the file changed, so updates show up on the next open
+        const res = await Promise.race([fetch(req.url, {cache: 'no-cache', credentials: 'same-origin'}), timeout(4000)]);
         if (res && res.ok) cache.put(req.mode === 'navigate' ? './index.html' : req, res.clone());
         return res;
       } catch (err) {

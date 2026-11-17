@@ -634,14 +634,16 @@ function viewHome() {
     <div class="narrow" style="gap:18px">
       <button class="btn primary block log-cta" data-a="go" data-tab="log">Log a workout</button>
       ${nx ? `<div class="dim small" style="margin-top:-10px">Up next in ${esc(prog.name)}: <b style="color:var(--red-text)">${esc(nx.name)}</b></div>` : ''}
-      ${last ? `<section class="card">
+      ${last ? `<button class="card lastcard" data-a="hopen-home" data-id="${last.id}" aria-label="View or edit your last session">
         <div class="row"><h2 class="h2">Last session</h2><span class="spacer"></span><span class="dim small">${fmtDate(last.date, {weekday: 'short', month: 'short', day: 'numeric'})}</span></div>
         <div class="stats3">
           <div><span class="eyebrow">Day</span><b>${esc(last.name || 'Workout')}</b></div>
           <div><span class="eyebrow">Sets</span><b>${workoutSets(last)}</b></div>
           <div><span class="eyebrow">Lbs moved</span><b>${fmtVol(workoutVolume(last))}</b></div>
         </div>
-      </section>` : ''}
+        <div class="lastex">${(last.exercises || []).map(ex => `<div><span>${esc(ex.name)}</span>${V((ex.sets || []).map(x => fmtSet(x, ex.kind || 'wr', ex.unit)).join(', '))}</div>`).join('')}</div>
+        <span class="hi small">Tap to view or edit ›</span>
+      </button>` : ''}
       ${viewMotivation()}
     </div>
   </div>`;
@@ -861,7 +863,7 @@ function viewHistoryEdit() {
   const H = S.hEdit;
   const delArmed = S.confirm === 'wdel-' + H.id;
   return `<div class="narrow">
-    <div><button class="btn quiet sm" data-a="hclose">‹ Back to History</button></div>
+    <div><button class="btn quiet sm" data-a="hclose">‹ Back${S.hReturn === 'home' ? '' : ' to History'}</button></div>
     <section class="active-head">
       <div class="eyebrow">Edit workout</div>
       <input class="title-input" id="h-name" data-af="name" value="${esc(H.name)}" aria-label="Workout name">
@@ -898,7 +900,7 @@ function saveHistoryEdit() {
   if (!exercises.length) { toast('No complete sets left. Add one, or use Delete workout.'); return; }
   const {durationMin, id, ...rest} = orig;
   saveDoc('workouts/' + H.id, {...rest, name: (H.name || 'Workout').trim() || 'Workout', date: H.date || orig.date, notes: (H.notes || '').trim(), exercises});
-  S.hEdit = null; S.confirm = null; toast('Workout saved'); render();
+  S.hEdit = null; S.confirm = null; toast('Workout saved'); if (S.hReturn === 'home') go('home'); else render();
 }
 
 /* ---------- Progress ---------- */
@@ -1468,8 +1470,9 @@ document.addEventListener('click', e => {
       saveSettings({custom: custom().filter(c => c.name !== name).concat([entry])});
       S.picker.creating = null; addExercise(name); toast(`“${name}” saved to your exercises`); break;
     }
-    case 'hopen': openHistoryEdit(el.dataset.id); break;
-    case 'hclose': S.hEdit = null; S.confirm = null; render(); window.scrollTo(0, 0); break;
+    case 'hopen': S.hReturn = 'history'; openHistoryEdit(el.dataset.id); break;
+    case 'hopen-home': S.tab = 'history'; S.hReturn = 'home'; openHistoryEdit(el.dataset.id); break;
+    case 'hclose': S.hEdit = null; S.confirm = null; if (S.hReturn === 'home') go('home'); else { render(); window.scrollTo(0, 0); } break;
     case 'hsave': saveHistoryEdit(); break;
     case 'repeat-w': {
       if (S.active) { toast('Finish or discard the current workout first'); go('log'); break; }
