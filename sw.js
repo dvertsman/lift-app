@@ -1,7 +1,7 @@
 // Lift Log service worker: lets the app open instantly and work offline.
 // App files: network first (so updates show up right away), falling back to the saved copy when offline or slow.
 // Fonts: saved after first use. Supabase requests always go straight to the network.
-const VERSION = 'liftlog-v1';
+const VERSION = 'liftlog-v2';
 const SHELL = ['./', './index.html', './app.js', './config.js', './vendor/supabase.js', './manifest.webmanifest',
   './icons/icon-192.png', './icons/icon-512.png', './icons/apple-touch-icon.png'];
 

@@ -63,6 +63,7 @@ const ICON = {
   history: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="4" y="5" width="16" height="15" rx="2"/><path d="M4 10h16M9 3v4M15 3v4"/></svg>',
   progress: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19h16"/><path d="M5 15l4-4 4 3 6-7"/></svg>',
   splits: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 6h11M9 12h11M9 18h11"/><circle cx="4.5" cy="6" r="1.2"/><circle cx="4.5" cy="12" r="1.2"/><circle cx="4.5" cy="18" r="1.2"/></svg>',
+  gear: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>',
   user: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6"/></svg>',
   menu: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg>',
   check: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>',
@@ -70,7 +71,23 @@ const ICON = {
   down: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>',
   x: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>',
 };
-const PAGES = [['home','Home'],['log','Log workout'],['history','History'],['progress','Progress'],['splits','My splits'],['account','Account']];
+const PAGES = [['home','Home'],['log','Log workout'],['history','History'],['progress','Progress'],['splits','My splits'],['account','Settings']];
+/* Color themes, switchable in Settings. Saved to the account so every device matches. */
+const THEMES = [
+  {id: 'blue',  name: 'Steel blue',  note: 'Default', dots: ['#121416', '#4f78a3', '#ffffff']},
+  {id: 'dusty', name: 'Dusty red',   note: 'Muted red', dots: ['#141313', '#a94a44', '#ffffff']},
+  {id: 'sage',  name: 'Sage green',  note: 'Earthy', dots: ['#121413', '#5b7c59', '#ffffff']},
+  {id: 'mono',  name: 'Monochrome',  note: 'Black & white', dots: ['#0f1012', '#ececec', '#9b9b9b']},
+  {id: 'red',   name: 'Black & red', note: 'The original', dots: ['#000000', '#e3141b', '#ffffff']},
+];
+const THEME_BG = {blue: '#121416', dusty: '#141313', sage: '#121413', mono: '#0f1012', red: '#000000'};
+function applyTheme(id) {
+  if (!THEME_BG[id]) id = 'blue';
+  if (id === 'blue') delete document.documentElement.dataset.palette; else document.documentElement.dataset.palette = id;
+  const m = document.querySelector('meta[name="theme-color"]'); if (m) m.setAttribute('content', THEME_BG[id]);
+  try { localStorage.setItem('liftlog.theme', JSON.stringify(id)); } catch (e) {}
+}
+const currentTheme = () => (S.settings && S.settings.theme) || (() => { try { return JSON.parse(localStorage.getItem('liftlog.theme')); } catch (e) { return null; } })() || 'blue';
 
 /* ===================== exercise library =====================
    "Name" logs weight × reps. Suffixes: |h hold, |t time only, |y carry/sled, |c:mi |c:m |c:cal |c:fl cardio */
@@ -290,6 +307,7 @@ function applyDocs() {
     if (col === 'workouts') w.push({...data, id}); else if (col === 'routines') r.push({...data, id}); else if (path === 'settings/main') st = data || {};
   }
   S.workouts = w; S.routines = r; S.settings = st; S._d = null;
+  if (st.theme) applyTheme(st.theme);
 }
 function saveDoc(path, data) {
   data = data === null ? null : clone(data);
@@ -360,7 +378,7 @@ function subscribeLive() {
 /* Writes that keep the in-memory copy current right away. */
 function saveSettings(patch) {
   S.settings = {...S.settings, ...patch};
-  const doc = {custom: custom(), programs: S.settings.programs || [], activeProgram: S.settings.activeProgram || 'ppl', clips: S.settings.clips || []};
+  const doc = {custom: custom(), programs: S.settings.programs || [], activeProgram: S.settings.activeProgram || 'ppl', clips: S.settings.clips || [], ...(S.settings.theme ? {theme: S.settings.theme} : {})};
   saveDoc('settings/main', doc);
 }
 function saveRoutine(id, doc) {
@@ -396,7 +414,7 @@ function startUser(user) {
   applyDocs();
   if (Object.keys(CACHE).length) { S.loaded = true; S.routinesReady = S.settingsReady = true; S.initDone = true; }
   const la = lsGet(LS_ACTIVE()); S.active = la && la.exercises ? la : null;
-  S.tab = S.active ? 'log' : 'home';
+  S.tab = 'home';
   render(); updateSyncBadge();
   loadAll(); subscribeLive();
 }
@@ -407,6 +425,7 @@ function stopUser() {
   render(); updateSyncBadge();
 }
 async function boot() {
+  applyTheme(currentTheme());
   if (!CONFIGURED || !window.supabase) { S.authView = 'setup'; render(); return; }
   sb = window.supabase.createClient(CFG.supabaseUrl, CFG.supabaseKey, {auth: {persistSession: true, autoRefreshToken: true, detectSessionInUrl: true}});
   sb.auth.onAuthStateChange((event, session) => {
@@ -492,7 +511,13 @@ function viewAccount() {
   const waiting = Object.keys(QUEUE).length;
   const standalone = matchMedia('(display-mode: standalone)').matches || navigator.standalone;
   return `<div class="narrow">
-    <div><div class="eyebrow">Account</div><h1 class="page-h">You</h1></div>
+    <div><div class="eyebrow">Your app</div><h1 class="page-h">Settings</h1></div>
+    <section class="card">
+      <h2 class="h2">Colors</h2>
+      <div class="swatches" role="group" aria-label="Color theme">${THEMES.map(t => `<button class="swatch" data-a="theme" data-v="${t.id}" aria-pressed="${currentTheme() === t.id}">
+        <span class="dots">${t.dots.map(c => `<i style="background:${c}"></i>`).join('')}</span>${t.name}<small>${t.note}</small></button>`).join('')}</div>
+      <p class="dim small" style="margin:0">Saved to your account, so your phone and laptop match.</p>
+    </section>
     <section class="card">
       <div class="row"><span class="eyebrow">Signed in as</span></div>
       <div style="color:var(--val);font-weight:700;font-size:18px;word-break:break-all">${esc(S.user.email || '')}</div>
@@ -549,7 +574,7 @@ function renderMenu() {
       ${PAGES.slice(0, 4).map(([k, l]) => `<button role="menuitem" data-a="go" data-tab="${k}" ${S.tab === k ? 'aria-current="page"' : ''}>${ICON[k]}${l}</button>`).join('')}
       <hr>
       <button role="menuitem" data-a="go" data-tab="splits" ${S.tab === 'splits' ? 'aria-current="page"' : ''}>${ICON.splits}My splits</button>
-      <button role="menuitem" data-a="go" data-tab="account" ${S.tab === 'account' ? 'aria-current="page"' : ''}>${ICON.user}Account</button>
+      <button role="menuitem" data-a="go" data-tab="account" ${S.tab === 'account' ? 'aria-current="page"' : ''}>${ICON.gear}Settings</button>
     </div>` : ''}`;
 }
 function render() {
@@ -565,10 +590,9 @@ function render() {
   $('#main').innerHTML = html;
   renderPicker();
   if (S.tab === 'progress') requestAnimationFrame(drawCharts);
-  tickElapsed();
   mountMotivation();
 }
-function go(tab) { S.tab = tab; S.menuOpen = false; S.editR = null; S.confirm = null; S.splitEdit = null; S.newSplit = null; render(); window.scrollTo(0, 0); }
+function go(tab) { S.hEdit = null; S.tab = tab; S.menuOpen = false; S.editR = null; S.confirm = null; S.splitEdit = null; S.newSplit = null; render(); window.scrollTo(0, 0); }
 
 /* ---------- Home ---------- */
 function upNext(pid) {
@@ -608,17 +632,14 @@ function viewHome() {
       </div>
     </section>
     <div class="narrow" style="gap:18px">
-      ${S.active
-        ? `<button class="btn primary block log-cta" data-a="go" data-tab="log">Resume ${esc(S.active.name)}</button>`
-        : `<button class="btn primary block log-cta" data-a="go" data-tab="log">Log a workout</button>
-           ${nx ? `<div class="dim small" style="margin-top:-10px">Up next in ${esc(prog.name)}: <b style="color:var(--red-text)">${esc(nx.name)}</b></div>` : ''}`}
+      <button class="btn primary block log-cta" data-a="go" data-tab="log">Log a workout</button>
+      ${nx ? `<div class="dim small" style="margin-top:-10px">Up next in ${esc(prog.name)}: <b style="color:var(--red-text)">${esc(nx.name)}</b></div>` : ''}
       ${last ? `<section class="card">
         <div class="row"><h2 class="h2">Last session</h2><span class="spacer"></span><span class="dim small">${fmtDate(last.date, {weekday: 'short', month: 'short', day: 'numeric'})}</span></div>
         <div class="stats3">
           <div><span class="eyebrow">Day</span><b>${esc(last.name || 'Workout')}</b></div>
           <div><span class="eyebrow">Sets</span><b>${workoutSets(last)}</b></div>
           <div><span class="eyebrow">Lbs moved</span><b>${fmtVol(workoutVolume(last))}</b></div>
-          ${last.durationMin ? `<div><span class="eyebrow">Minutes</span><b>${last.durationMin}</b></div>` : ''}
         </div>
       </section>` : ''}
       ${viewMotivation()}
@@ -667,7 +688,7 @@ function startWorkout(dayId) {
 }
 const exKind = ex => ex.kind || 'wr';
 function placeholders(ex, si) {
-  const last = lastFor(ex.name, S.active.editingId);
+  const last = lastFor(ex.name);
   const prev = last ? (last.sets[si] || last.sets[last.sets.length - 1]) : null;
   const ph = {prev: last ? last.sets[si] : null, w: prev ? prev.w : null, r: prev ? prev.r : null, t: prev ? prev.t : null, d: prev ? prev.d : null};
   if (exKind(ex) === 'wr' && ph.r == null && ex.target && ex.target.reps) { const lr = parseInt(ex.target.reps, 10); if (isFinite(lr)) ph.r = lr; }
@@ -676,7 +697,7 @@ function placeholders(ex, si) {
 function isPR(ex, s) {
   const kind = exKind(ex);
   if (!s.done || !valid(kind, s)) return false;
-  const b = bestFor(ex.name, S.active.editingId);
+  const b = bestFor(ex.name);
   switch (kind) {
     case 'wr': { const e = e1rm(s.w || 0, s.r); return (e > 0 && b.e > 0 && e > b.e + 0.05) || ((s.w || 0) > 0 && b.w > 0 && s.w > b.w); }
     case 'h': case 't': return b.t > 0 && s.t > b.t;
@@ -685,7 +706,6 @@ function isPR(ex, s) {
   }
   return false;
 }
-function activeVolume() { return S.active.exercises.reduce((a, ex) => a + (exKind(ex) === 'wr' ? sum(ex.sets, s => s.done && s.r > 0 ? (s.w || 0) * s.r : 0) : 0), 0); }
 function inputVal(f, kind, v) {
   if (v == null) return '';
   if (f === 'w') return fmtW(v);
@@ -700,21 +720,29 @@ function inputAttrs(f, kind) {
   return '';
 }
 function phText(f, kind, ph) { const v = ph[f]; if (v == null) return f === 't' ? (kind === 'h' ? 'sec' : 'mm:ss') : '0'; return inputVal(f, kind, v); }
-function viewActive() {
-  const A = S.active;
-  const day = A.routineId ? dayById(A.routineId) : null;
+/* The workout being edited: the open log on the Log page, or a past workout opened from History. */
+const draft = () => (S.tab === 'history' && S.hEdit) ? S.hEdit : S.active;
+const touch = () => { if (draft() === S.active) persistActive(); };
+const volOf = W => W.exercises.reduce((a, ex) => a + (exKind(ex) === 'wr' ? sum(ex.sets, s => (W === S.hEdit || s.done) && s.r > 0 ? (s.w || 0) * s.r : 0) : 0), 0);
+function exerciseCards(W, mode) {
+  const live = mode === 'live';
+  const day = live && W.routineId ? dayById(W.routineId) : null;
   const onList = new Set(day ? (day.exercises || []).map(e => e.name) : []);
-  const exHtml = A.exercises.map((ex, ei) => {
+  return W.exercises.map((ex, ei) => {
     const kind = exKind(ex), unit = ex.unit, [c1, c2] = cols(kind, unit);
-    const last = lastFor(ex.name, A.editingId); const b = bestFor(ex.name, A.editingId);
     const sub = [];
-    if (ex.target && (ex.target.sets || ex.target.reps) && kind === 'wr') sub.push(`Target ${V(ex.target.sets + ' × ' + esc(ex.target.reps || '?'))}`);
-    if (last) sub.push(`Last time (${fmtDate(last.date)}): ${V(last.sets.map(s => fmtSet(s, kind, unit)).join(', '))}`);
-    if (kind === 'wr' && b.e > 0) sub.push(`Best est. 1RM ${V(Math.round(b.e))}`);
-    if (day && !onList.has(ex.name) && !A.editingId) sub.push(`<span style="color:var(--red-text)">New: saves to your ${esc(day.name)} list when you finish</span>`);
+    if (live) {
+      const last = lastFor(ex.name); const b = bestFor(ex.name);
+      if (ex.target && (ex.target.sets || ex.target.reps) && kind === 'wr') sub.push(`Target ${V(ex.target.sets + ' × ' + esc(ex.target.reps || '?'))}`);
+      if (last) sub.push(`Last time (${fmtDate(last.date)}): ${V(last.sets.map(s => fmtSet(s, kind, unit)).join(', '))}`);
+      if (kind === 'wr' && b.e > 0) sub.push(`Best est. 1RM ${V(Math.round(b.e))}`);
+      if (day && !onList.has(ex.name)) sub.push(`<span class="hi">New: saves to your ${esc(day.name)} list when you finish</span>`);
+    }
     const rows = ex.sets.map((s, si) => {
-      const ph = placeholders(ex, si); const pr = isPR(ex, s);
-      const inp = c => c ? `<input class="num" id="${c[0]}-${ei}-${si}" ${inputAttrs(c[0], kind)} enterkeyhint="next" autocomplete="off" aria-label="${esc(ex.name)} set ${si + 1} ${c[1]}" data-ei="${ei}" data-si="${si}" data-f="${c[0]}" value="${inputVal(c[0], kind, s[c[0]])}" placeholder="${phText(c[0], kind, ph)}">` : '<span></span>';
+      const ph = live ? placeholders(ex, si) : {};
+      const inp = c => c ? `<input class="num" id="${c[0]}-${ei}-${si}" ${inputAttrs(c[0], kind)} enterkeyhint="next" autocomplete="off" aria-label="${esc(ex.name)} set ${si + 1} ${c[1]}" data-ei="${ei}" data-si="${si}" data-f="${c[0]}" value="${inputVal(c[0], kind, s[c[0]])}" placeholder="${live ? phText(c[0], kind, ph) : (c[0] === 't' ? (kind === 'h' ? 'sec' : 'mm:ss') : '0')}">` : '<span></span>';
+      if (!live) return `<div class="set-row e" id="row-${ei}-${si}"><span class="setno">${si + 1}</span>${inp(c1)}${inp(c2)}</div>`;
+      const pr = isPR(ex, s);
       return `<div class="set-row ${s.done ? 'done' : ''}" id="row-${ei}-${si}">
         <span class="setno">${pr ? '<span class="chip pr">PR</span>' : si + 1}</span>
         <span class="prev">${ph.prev ? fmtSet(ph.prev, kind, unit) : '—'}</span>
@@ -723,56 +751,52 @@ function viewActive() {
       </div>`;
     }).join('');
     const armed = S.confirm === 'exdel-' + ei;
+    const head = live ? `<div class="set-row head"><span style="text-align:center">Set</span><span>Prev</span><span>${c1 ? c1[1] : ''}</span><span>${c2[1]}</span><span></span></div>`
+      : `<div class="set-row e head"><span style="text-align:center">Set</span><span>${c1 ? c1[1] : ''}</span><span>${c2[1]}</span></div>`;
     return `<article class="ex" id="ex-${ei}">
       <div class="ex-h">
-        <div style="min-width:0"><h3>${esc(ex.name)}</h3><div class="ex-sub">${sub.map(x => `<span>${x}</span>`).join('')}</div></div>
+        <div style="min-width:0"><h3>${esc(ex.name)}</h3>${sub.length ? `<div class="ex-sub">${sub.map(x => `<span>${x}</span>`).join('')}</div>` : ''}</div>
         <div class="ex-act">
           <button class="icon-btn" data-a="ex-up" data-ei="${ei}" aria-label="Move ${esc(ex.name)} up" ${ei === 0 ? 'disabled' : ''}>${ICON.up}</button>
-          <button class="icon-btn" data-a="ex-down" data-ei="${ei}" aria-label="Move ${esc(ex.name)} down" ${ei === A.exercises.length - 1 ? 'disabled' : ''}>${ICON.down}</button>
+          <button class="icon-btn" data-a="ex-down" data-ei="${ei}" aria-label="Move ${esc(ex.name)} down" ${ei === W.exercises.length - 1 ? 'disabled' : ''}>${ICON.down}</button>
           <button class="icon-btn ${armed ? 'armed' : ''}" data-a="ex-del" data-ei="${ei}" aria-label="${armed ? 'Tap again to remove' : 'Remove'} ${esc(ex.name)}">${ICON.x}</button>
         </div>
       </div>
-      <div class="sets">
-        <div class="set-row head"><span style="text-align:center">Set</span><span>Prev</span><span>${c1 ? c1[1] : ''}</span><span>${c2[1]}</span><span></span></div>
-        ${rows}
-      </div>
+      <div class="sets">${head}${rows}</div>
       <div class="ex-foot">
         <button class="btn sm" data-a="add-set" data-ei="${ei}">+ Add set</button>
         ${ex.sets.length > 1 ? `<button class="btn sm quiet" data-a="del-set" data-ei="${ei}">Remove last set</button>` : ''}
       </div>
     </article>`;
   }).join('');
+}
+function viewActive() {
+  const A = S.active;
+  const day = A.routineId ? dayById(A.routineId) : null;
+  const exHtml = exerciseCards(A, 'live');
   const discardArmed = S.confirm === 'discard';
   return `
   <section class="active-head">
-    <div class="eyebrow">${A.editingId ? 'Editing workout' : 'In progress'}</div>
+    <div class="eyebrow">Logging</div>
     <input class="title-input" id="a-name" data-af="name" value="${esc(A.name)}" aria-label="Workout name">
     <div class="meta">
       <input type="date" id="a-date" data-af="date" value="${esc(A.date)}" aria-label="Workout date">
-      ${A.editingId ? '' : `<span class="stat"><b id="elapsed" class="tnum">0:00</b>elapsed</span>`}
-      <span class="stat"><b class="tnum" id="a-vol">${fmtVol(activeVolume())}</b>lbs moved</span>
+      <span class="stat"><b class="tnum" id="a-vol">${fmtVol(volOf(A))}</b>lbs moved</span>
     </div>
   </section>
   ${exHtml ? `<div class="ex-grid">${exHtml}</div>` : `<div class="empty">${day ? `Your ${esc(day.name)} list is empty. Add exercises below and they’re saved to ${esc(day.name)} when you finish.` : 'No exercises yet. Add your first one below.'}</div>`}
   <button class="btn block" data-a="pick" data-target="active">+ Add exercise</button>
   <textarea class="notes" id="a-notes" data-af="notes" placeholder="Notes: how it felt, sleep, anything to remember next time">${esc(A.notes || '')}</textarea>
   <div class="finish-bar">
-    <button class="btn quiet ${discardArmed ? 'armed' : ''}" data-a="discard">${discardArmed ? 'Tap again to discard' : (A.editingId ? 'Cancel' : 'Discard')}</button>
-    <button class="btn primary" data-a="finish">${A.editingId ? 'Save changes' : 'Finish workout'}</button>
+    <button class="btn quiet ${discardArmed ? 'armed' : ''}" data-a="discard">${discardArmed ? 'Tap again to discard' : 'Discard'}</button>
+    <button class="btn primary" data-a="finish">Finish workout</button>
   </div>`;
 }
-let elapsedInt = null;
-function tickElapsed() {
-  clearInterval(elapsedInt);
-  const el = $('#elapsed'); if (!el || !S.active) return;
-  const upd = () => { el.textContent = fmtDur(Math.max(0, (Date.now() - S.active.startedAt) / 1000)); };
-  upd(); elapsedInt = setInterval(() => { if (!document.body.contains(el)) return clearInterval(elapsedInt); upd(); }, 1000);
-}
 function refreshRow(ei, si) {
-  const ex = S.active.exercises[ei], s = ex.sets[si];
+  const W = draft(); const ex = W.exercises[ei], s = ex.sets[si];
   const row = $(`#row-${ei}-${si}`); if (!row) return;
-  row.querySelector('.setno').innerHTML = isPR(ex, s) ? '<span class="chip pr">PR</span>' : String(si + 1);
-  const v = $('#a-vol'); if (v) v.textContent = fmtVol(activeVolume());
+  if (W === S.active) row.querySelector('.setno').innerHTML = isPR(ex, s) ? '<span class="chip pr">PR</span>' : String(si + 1);
+  const v = $('#a-vol'); if (v) v.textContent = fmtVol(volOf(W));
 }
 function finishWorkout() {
   const A = S.active;
@@ -787,7 +811,6 @@ function finishWorkout() {
     name: (A.name || 'Workout').trim() || 'Workout', date: A.date || ymd(new Date()),
     startedAt: prev ? (prev.startedAt || A.startedAt) : A.startedAt,
     finishedAt: prev ? (prev.finishedAt || Date.now()) : Date.now(),
-    durationMin: prev ? (prev.durationMin || null) : Math.max(1, Math.round((Date.now() - A.startedAt) / 60000)),
     routineId: A.routineId || null, notes: (A.notes || '').trim(), exercises,
   };
   let prCount = 0; A.exercises.forEach(ex => ex.sets.forEach(s => { if (isPR(ex, s)) prCount++; }));
@@ -807,6 +830,7 @@ function finishWorkout() {
 
 /* ---------- History ---------- */
 function viewHistory() {
+  if (S.hEdit) return viewHistoryEdit();
   const d = derive(); const desc = [...d.asc].reverse();
   if (!desc.length) return `<div class="narrow"><h1 class="page-h">History</h1><div class="empty">No workouts yet. Finish one from Log workout and it lands here.</div></div>`;
   let html = `<div><h1 class="page-h">History</h1><p class="dim" style="margin:6px 0 0">${V(desc.length)} workout${desc.length > 1 ? 's' : ''} since ${V(fmtDate(d.asc[0].date, {month: 'short', day: 'numeric', year: 'numeric'}))}</p></div>`;
@@ -814,35 +838,67 @@ function viewHistory() {
   for (const w of desc) {
     const mk = w.date.slice(0, 7);
     if (mk !== curMonth) { curMonth = mk; html += `<h2 class="month-h">${parseYmd(w.date).toLocaleDateString(undefined, {month: 'long', year: 'numeric'})}</h2>`; }
-    const open = S.expanded.has(w.id); const prs = d.prs[w.id] || []; const dt = parseYmd(w.date);
+    const prs = d.prs[w.id] || []; const dt = parseYmd(w.date);
     const vol = workoutVolume(w);
     html += `<article class="hcard">
-      <button class="hhead" data-a="expand" data-id="${w.id}" aria-expanded="${open}">
+      <button class="hhead" data-a="hopen" data-id="${w.id}" aria-label="Edit ${esc(w.name || 'workout')} on ${fmtDate(w.date)}">
         <div class="hdate"><span class="dw">${dt.toLocaleDateString(undefined, {weekday: 'short'}).toUpperCase()}</span><span class="dn">${dt.getDate()}</span></div>
         <div class="hmain">
           <div class="row" style="gap:8px"><span class="hname">${esc(w.name || 'Workout')}</span>${prs.length ? `<span class="chip pr">${prs.length} PR${prs.length > 1 ? 's' : ''}</span>` : ''}</div>
-          <div class="hsub tnum">${V((w.exercises || []).length)} exercises · ${V(workoutSets(w))} sets${vol ? ` · ${V(fmtVol(vol))} lbs` : ''}${w.durationMin ? ` · ${V(w.durationMin)} min` : ''}</div>
-          ${open ? '' : `<div class="hex">${(w.exercises || []).map(e => esc(e.name)).join(' · ')}</div>`}
+          <div class="hsub tnum">${V((w.exercises || []).length)} exercises · ${V(workoutSets(w))} sets${vol ? ` · ${V(fmtVol(vol))} lbs` : ''}</div>
+          <div class="hex">${(w.exercises || []).map(e => esc(e.name)).join(' · ')}</div>
         </div>
+        <span class="hgo" aria-hidden="true">Edit ›</span>
       </button>
-      ${open ? `<div class="hbody">
-        ${(w.exercises || []).map(ex => {
-          const p = prs.find(x => x.ex === ex.name);
-          return `<div class="hx"><div class="n">${esc(ex.name)}${p ? `<span class="chip pr">PR · ${p.txt}</span>` : ''}</div>
-          <div class="setchips">${(ex.sets || []).map(s => `<span>${fmtSet(s, ex.kind || 'wr', ex.unit)}</span>`).join('')}</div></div>`;
-        }).join('')}
-        ${w.notes ? `<p class="hnotes">${esc(w.notes)}</p>` : ''}
-        <div class="row">
-          <button class="btn sm" data-a="edit-w" data-id="${w.id}">Edit</button>
-          <button class="btn sm" data-a="repeat-w" data-id="${w.id}">Repeat this workout</button>
-          <span class="spacer"></span>
-          <button class="btn sm quiet ${S.confirm === 'wdel-' + w.id ? 'armed' : ''}" data-a="del-w" data-id="${w.id}">${S.confirm === 'wdel-' + w.id ? 'Tap again to delete' : 'Delete'}</button>
-        </div>
-      </div>` : ''}
     </article>`;
   }
   html += `<div class="row" style="justify-content:center;margin-top:8px"><button class="btn sm quiet" data-a="backup">Copy all data as a backup</button></div>`;
   return `<div class="narrow">${html}</div>`;
+}
+
+
+function viewHistoryEdit() {
+  const H = S.hEdit;
+  const delArmed = S.confirm === 'wdel-' + H.id;
+  return `<div class="narrow">
+    <div><button class="btn quiet sm" data-a="hclose">‹ Back to History</button></div>
+    <section class="active-head">
+      <div class="eyebrow">Edit workout</div>
+      <input class="title-input" id="h-name" data-af="name" value="${esc(H.name)}" aria-label="Workout name">
+      <div class="meta">
+        <input type="date" id="h-date" data-af="date" value="${esc(H.date)}" aria-label="Workout date">
+        <span class="stat"><b class="tnum" id="a-vol">${fmtVol(volOf(H))}</b>lbs moved</span>
+      </div>
+    </section>
+    ${H.exercises.length ? `<div class="ex-grid one">${exerciseCards(H, 'edit')}</div>` : '<div class="empty">No exercises left. Add one, or delete this workout.</div>'}
+    <button class="btn block" data-a="pick" data-target="hist">+ Add exercise</button>
+    <textarea class="notes" id="h-notes" data-af="notes" placeholder="Notes">${esc(H.notes || '')}</textarea>
+    <div class="finish-bar">
+      <button class="btn quiet" data-a="hclose">Cancel</button>
+      <button class="btn primary" data-a="hsave">Save</button>
+    </div>
+    <div class="row">
+      <button class="btn sm quiet" data-a="repeat-w" data-id="${H.id}">Log this workout again</button>
+      <span class="spacer"></span>
+      <button class="btn sm quiet ${delArmed ? 'armed' : ''}" data-a="del-w" data-id="${H.id}">${delArmed ? 'Tap again to delete' : 'Delete workout'}</button>
+    </div>
+  </div>`;
+}
+function openHistoryEdit(id) {
+  const w = S.workouts.find(x => x.id === id); if (!w) return;
+  S.hEdit = {id: w.id, name: w.name || 'Workout', date: w.date, notes: w.notes || '', exercises: (w.exercises || []).map(ex => ({name: ex.name, kind: ex.kind || 'wr', ...(ex.unit ? {unit: ex.unit} : {}), sets: (ex.sets || []).map(s => ({...newSet(), ...s}))}))};
+  render(); window.scrollTo(0, 0);
+}
+function saveHistoryEdit() {
+  const H = S.hEdit; const orig = S.workouts.find(x => x.id === H.id) || {};
+  const exercises = H.exercises.map(ex => {
+    const kind = exKind(ex);
+    return {name: ex.name, kind, ...(ex.unit ? {unit: ex.unit} : {}), sets: ex.sets.filter(s => valid(kind, s)).map(s => cleanSet(kind, ex.unit, s))};
+  }).filter(ex => ex.sets.length);
+  if (!exercises.length) { toast('No complete sets left. Add one, or use Delete workout.'); return; }
+  const {durationMin, id, ...rest} = orig;
+  saveDoc('workouts/' + H.id, {...rest, name: (H.name || 'Workout').trim() || 'Workout', date: H.date || orig.date, notes: (H.notes || '').trim(), exercises});
+  S.hEdit = null; S.confirm = null; toast('Workout saved'); render();
 }
 
 /* ---------- Progress ---------- */
@@ -1306,7 +1362,7 @@ function renderPickList() {
   }
   const q = (P.q || '').trim().toLowerCase();
   const all = allExercises();
-  const used = new Set((P.target === 'active' ? S.active.exercises : S.editR.exercises).map(e => e.name));
+  const used = new Set((P.target === 'active' ? S.active.exercises : P.target === 'hist' ? S.hEdit.exercises : S.editR.exercises).map(e => e.name));
   const inGroup = e => !P.group || P.group === 'All' || e.group === P.group;
   const words = q.replace(/-/g, ' ').split(/\s+/).filter(Boolean);
   const match = e => {
@@ -1337,13 +1393,14 @@ function renderPickList() {
 function closePicker() { S.picker = null; renderPicker(); }
 function addExercise(name) {
   const i = exInfo(name);
-  if (S.picker.target === 'active') {
-    const last = lastFor(name, S.active.editingId);
-    S.active.exercises.push(mkEx(name, last ? Math.min(Math.max(last.sets.length, 1), 8) : (i.kind === 'wr' ? 3 : 1)));
-    persistActive();
+  if (S.picker.target === 'active' || S.picker.target === 'hist') {
+    const W = S.picker.target === 'hist' ? S.hEdit : S.active;
+    const last = lastFor(name);
+    W.exercises.push(mkEx(name, last ? Math.min(Math.max(last.sets.length, 1), 8) : (i.kind === 'wr' ? 3 : 1)));
+    if (W === S.active) persistActive();
   } else S.editR.exercises.push({name, sets: i.kind === 'wr' ? 3 : 1, reps: i.kind === 'wr' ? '8-10' : '', kind: i.kind, unit: i.unit});
   closePicker(); render();
-  if (S.tab === 'log' && S.active) { const el = $(`#ex-${S.active.exercises.length - 1}`); if (el) el.scrollIntoView({block: 'center', behavior: 'smooth'}); }
+  if (draft()) { const el = $(`#ex-${draft().exercises.length - 1}`); if (el) el.scrollIntoView({block: 'center', behavior: 'smooth'}); }
 }
 
 /* ===================== events ===================== */
@@ -1361,6 +1418,7 @@ document.addEventListener('click', e => {
   if (!/^(ex-del|discard|del-w|day-del|del-split|clip-del|import)$/.test(a)) S.confirm = null;
   switch (a) {
     case 'menu': S.menuOpen = !S.menuOpen; renderMenu(); break;
+    case 'theme': applyTheme(el.dataset.v); saveSettings({theme: el.dataset.v}); render(); break;
     case 'auth-view': S.authView = el.dataset.v; S.authMsg = ''; render(); break;
     case 'sign-out': if (Object.keys(QUEUE).length && !navigator.onLine) { toast('You have changes that haven’t synced. Connect to the internet before signing out.'); break; } sb.auth.signOut(); break;
     case 'import': if (S.confirm === 'import') { S.confirm = null; importBackup(S.importText || ''); } else { if (!(S.importText || '').trim()) { toast('Paste a backup first'); break; } S.confirm = 'import'; render(); } break;
@@ -1392,12 +1450,12 @@ document.addEventListener('click', e => {
       if (s.done && isPR(ex, s)) toast(`New PR on ${ex.name}: ${fmtSet(s, kind, ex.unit)}`);
       break;
     }
-    case 'add-set': { const ex = S.active.exercises[ei]; const l = ex.sets[ex.sets.length - 1]; ex.sets.push(l ? {...newSet(), w: l.w, r: l.r, t: l.t, d: l.d} : newSet()); persistActive(); render(); break; }
-    case 'del-set': { const ex = S.active.exercises[ei]; if (ex.sets.length > 1) ex.sets.pop(); persistActive(); render(); break; }
-    case 'ex-up': if (ei > 0) { const x = S.active.exercises; [x[ei - 1], x[ei]] = [x[ei], x[ei - 1]]; persistActive(); render(); } break;
-    case 'ex-down': { const x = S.active.exercises; if (ei < x.length - 1) { [x[ei + 1], x[ei]] = [x[ei], x[ei + 1]]; persistActive(); render(); } break; }
-    case 'ex-del': if (S.confirm === 'exdel-' + ei) { S.active.exercises.splice(ei, 1); S.confirm = null; persistActive(); } else S.confirm = 'exdel-' + ei; render(); break;
-    case 'discard': if (S.confirm === 'discard') { const editing = S.active.editingId; S.active = null; S.confirm = null; persistActive(); go(editing ? 'history' : 'log'); } else { S.confirm = 'discard'; render(); } break;
+    case 'add-set': { const ex = draft().exercises[ei]; const l = ex.sets[ex.sets.length - 1]; ex.sets.push(l ? {...newSet(), w: l.w, r: l.r, t: l.t, d: l.d} : newSet()); touch(); render(); break; }
+    case 'del-set': { const ex = draft().exercises[ei]; if (ex.sets.length > 1) ex.sets.pop(); touch(); render(); break; }
+    case 'ex-up': if (ei > 0) { const x = draft().exercises; [x[ei - 1], x[ei]] = [x[ei], x[ei - 1]]; touch(); render(); } break;
+    case 'ex-down': { const x = draft().exercises; if (ei < x.length - 1) { [x[ei + 1], x[ei]] = [x[ei], x[ei + 1]]; touch(); render(); } break; }
+    case 'ex-del': if (S.confirm === 'exdel-' + ei) { draft().exercises.splice(ei, 1); S.confirm = null; touch(); } else S.confirm = 'exdel-' + ei; render(); break;
+    case 'discard': if (S.confirm === 'discard') { S.active = null; S.confirm = null; persistActive(); go('log'); } else { S.confirm = 'discard'; render(); } break;
     case 'finish': finishWorkout(); break;
     case 'pick': S.picker = {target: el.dataset.target, q: '', group: 'All'}; renderPicker(); break;
     case 'pick-group': S.picker.group = el.dataset.v; S.picker.creating = null; renderPickList(); $('#pick-list').scrollTop = 0; break;
@@ -1410,19 +1468,19 @@ document.addEventListener('click', e => {
       saveSettings({custom: custom().filter(c => c.name !== name).concat([entry])});
       S.picker.creating = null; addExercise(name); toast(`“${name}” saved to your exercises`); break;
     }
-    case 'expand': { const id = el.dataset.id; S.expanded.has(id) ? S.expanded.delete(id) : S.expanded.add(id); render(); break; }
-    case 'edit-w': case 'repeat-w': {
+    case 'hopen': openHistoryEdit(el.dataset.id); break;
+    case 'hclose': S.hEdit = null; S.confirm = null; render(); window.scrollTo(0, 0); break;
+    case 'hsave': saveHistoryEdit(); break;
+    case 'repeat-w': {
       if (S.active) { toast('Finish or discard the current workout first'); go('log'); break; }
       const w = S.workouts.find(x => x.id === el.dataset.id); if (!w) break;
-      const exs = (w.exercises || []).map(ex => ({name: ex.name, kind: ex.kind || 'wr', ...(ex.unit ? {unit: ex.unit} : {}), sets: ex.sets.map(s => a === 'edit-w' ? {...newSet(), ...s, done: true} : newSet())}));
-      S.active = a === 'edit-w'
-        ? {id: w.id, editingId: w.id, name: w.name, date: w.date, startedAt: w.startedAt || Date.now(), routineId: w.routineId || null, notes: w.notes || '', exercises: exs}
-        : {id: uid(), name: w.name, date: ymd(new Date()), startedAt: Date.now(), routineId: w.routineId || null, notes: '', exercises: exs};
+      const exs = (w.exercises || []).map(ex => ({name: ex.name, kind: ex.kind || 'wr', ...(ex.unit ? {unit: ex.unit} : {}), sets: ex.sets.map(() => newSet())}));
+      S.active = {id: uid(), name: w.name, date: ymd(new Date()), startedAt: Date.now(), routineId: w.routineId || null, notes: '', exercises: exs};
       persistActive(); go('log'); break;
     }
     case 'del-w': {
       const id = el.dataset.id;
-      if (S.confirm === 'wdel-' + id) { saveDoc('workouts/' + id, null); S.confirm = null; toast('Workout deleted'); }
+      if (S.confirm === 'wdel-' + id) { saveDoc('workouts/' + id, null); S.confirm = null; S.hEdit = null; toast('Workout deleted'); }
       else S.confirm = 'wdel-' + id;
       render(); break;
     }
@@ -1493,13 +1551,13 @@ document.addEventListener('click', e => {
 document.addEventListener('keydown', e => { if (e.key === 'Escape' && S.menuOpen) { S.menuOpen = false; renderMenu(); $('.menu-btn')?.focus(); } });
 document.addEventListener('input', e => {
   const t = e.target;
-  if (t.dataset.f && S.active) {
-    const ei = +t.dataset.ei, si = +t.dataset.si; const ex = S.active.exercises[ei]; const s = ex.sets[si]; const f = t.dataset.f;
+  if (t.dataset.f && draft()) {
+    const ei = +t.dataset.ei, si = +t.dataset.si; const ex = draft().exercises[ei]; const s = ex.sets[si]; const f = t.dataset.f;
     if (f === 't') s.t = parseDur(t.value, exKind(ex) === 'h' ? 'sec' : 'min');
     else if (f === 'r') { const r = num(t.value); s.r = r == null ? null : Math.round(r); }
     else s[f] = num(t.value);
-    persistActive(); refreshRow(ei, si);
-  } else if (t.dataset.af && S.active) { S.active[t.dataset.af] = t.value; persistActive(); }
+    touch(); refreshRow(ei, si);
+  } else if (t.dataset.af && draft()) { draft()[t.dataset.af] = t.value; touch(); }
   else if (t.dataset.rf && S.editR) S.editR.exercises[+t.dataset.ri][t.dataset.rf] = t.value;
   else if (t.dataset.bind) setPath(t.dataset.bind, t.value);
 });
@@ -1515,9 +1573,9 @@ document.addEventListener('keydown', e => {
   if (t.dataset.bind === 'addDayName') { e.preventDefault(); document.querySelector('[data-a="add-day"]')?.click(); return; }
   if (!t.dataset.f) return;
   e.preventDefault();
-  const ei = +t.dataset.ei, si = +t.dataset.si; const ex = S.active.exercises[ei]; const [c1, c2] = cols(exKind(ex), ex.unit);
+  const ei = +t.dataset.ei, si = +t.dataset.si; const ex = draft().exercises[ei]; const [c1, c2] = cols(exKind(ex), ex.unit);
   if (c1 && t.dataset.f === c1[0]) $(`#${c2[0]}-${ei}-${si}`)?.focus();
-  else { const b = document.querySelector(`.check[data-ei="${ei}"][data-si="${si}"]`); t.blur(); if (b && b.getAttribute('aria-pressed') !== 'true') b.click(); }
+  else { const b = document.querySelector(`.check[data-ei="${ei}"][data-si="${si}"]`); t.blur(); if (b && b.getAttribute('aria-pressed') !== 'true') b.click(); else if (!b) { const nx = document.querySelector(`#${c1 ? c1[0] : c2[0]}-${ei}-${si + 1}`); if (nx) nx.focus(); } }
 });
 
 boot();
